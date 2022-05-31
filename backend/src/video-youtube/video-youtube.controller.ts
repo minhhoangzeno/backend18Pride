@@ -19,32 +19,16 @@ export class VideoYoutubeController {
   }
 
   @Post()
-  @UseInterceptors(FileInterceptor('photoURL', {
-    storage: diskStorage({
-      destination: './uploads',
-      filename: (req, file, cb) => {
-        const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('')
-        cb(null, `${randomName}${(file.originalname)}`)
-      }
-    })
-  }))
+  @UseInterceptors(FileInterceptor('file'))
   async createVideoYoutube(@UploadedFile() file: Express.Multer.File, @Body() body: VideoYoutubeDto) {
-    return this.videoYoutubeService.createVideoYoutube(body, file.filename);
+    return this.videoYoutubeService.createVideoYoutube(body, file);
   }
 
   @Put(':id')
-  @UseInterceptors(FileInterceptor('photoURL', {
-    storage: diskStorage({
-      destination: './uploads',
-      filename: (req, file, cb) => {
-        const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('')
-        cb(null, `${randomName}${(file.originalname)}`)
-      }
-    })
-  }))
+  @UseInterceptors(FileInterceptor('file'))
   async updateVideoYoutube(@UploadedFile() file: Express.Multer.File, @Param('id') id: string, @Body() body: VideoYoutubeDto) {
     if (file) {
-      return this.videoYoutubeService.updateVideoYoutube(id, body, file.filename)
+      return this.videoYoutubeService.updateVideoYoutube(id, body, file)
     } else {
       return this.videoYoutubeService.updateVideoYoutube(id, body)
     }

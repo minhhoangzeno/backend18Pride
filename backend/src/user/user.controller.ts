@@ -1,5 +1,8 @@
-import { Body, Controller, Delete, Param, Post, Put, UseGuards, Request, Get } from '@nestjs/common';
+import { Body, Controller, Delete, Param, Post, Put, UseGuards, Request, Get, UseInterceptors, UploadedFile, Query } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
+import { Roles } from 'src/roles/roles.decorator';
+import { RolesGuard } from 'src/roles/roles.guard';
 import { ChangePasswordDto } from './dto/changePassword.dto';
 import { CreateUserDto } from './dto/createUser.dto';
 import { ResetPasswordDto } from './dto/resetPassword.dto';
@@ -10,16 +13,31 @@ import { UserService } from './user.service';
 export class UserController {
   constructor(private userService: UserService) { }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SuperAdmin')
+  @Get()
+  async findAll(@Query('activePage') activePage: number, @Query('limit') limit: number) {
+    return this.userService.findAll(activePage, limit);
+  }
+
   @Post('register')
   async register(@Body() createUserDto: CreateUserDto) {
     return this.userService.register(createUserDto)
   }
 
-  @Put(':id')
-  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.userService.updateUser(id, updateUserDto);
-  }
 
+  @Put(':id')
+  @UseInterceptors(FileInterceptor('file'))
+  async update(@UploadedFile() file: Express.Multer.File, @Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    if (file) {
+      return this.userService.updateUser(id, updateUserDto, file);
+    } else {
+      return this.userService.updateUser(id, updateUserDto);
+    }
+  }
+  
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SuperAdmin')
   @Delete(':id')
   async delete(@Param('id') id: string) {
     return this.userService.deleteUser(id);
@@ -39,5 +57,12 @@ export class UserController {
   @Post('verify-password')
   async verifyPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     return this.userService.verifyResetPassword(resetPasswordDto)
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SuperAdmin')
+  @Post('role/:id')
+  async changeRoleUser(@Param('id') id: string, @Body() body: any) {
+    return this.userService.roleUser(id, body.role)
   }
 }

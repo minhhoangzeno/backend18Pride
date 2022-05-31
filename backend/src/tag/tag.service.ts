@@ -38,8 +38,8 @@ export class TagService {
 
   async deleteTag(id: string) {
     return this.tagModel.findByIdAndDelete(id).then(result => {
-      this.videoYoutubeModel.deleteMany({ tag: result._id }).then((videos) => {
-        console.log(videos)
+      this.videoYoutubeModel.deleteMany({ tag: result._id }).then(() => {
+        
       }).catch(err => console.log("err", err))
     }).catch(() => {
       throw new HttpExceptError(messageNotFound, statusCodeErrorUser);

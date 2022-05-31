@@ -13,6 +13,13 @@ export class VideoYoutube {
   @Prop({ required: true })
   title: string;
 
+  @Prop({ required: true })
+  time: number;
+
+  @Prop({ required: true })
+  people: number;
+
+
   @Prop({ unique: true, required: true })
   videoID: string;
 

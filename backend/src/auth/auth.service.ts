@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { HttpExceptError } from 'src/helpers/error';
 import { UserStatus } from 'src/user/enum/user-status.enum';
 import { UserService } from 'src/user/user.service';
 import * as bcrypt from 'bcrypt'
 import { JwtService } from '@nestjs/jwt';
+import { response } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -19,19 +20,22 @@ export class AuthService {
       const isMatch = await bcrypt.compare(pass, user.password);
       if (isMatch) {
         const { password, ...result } = user;
+        if (user.role == 'User') {
+          throw new HttpExceptError('Your account does not have permission!', 401)
+        }
         return result;
       } else {
-        throw new HttpExceptError('Wrong is email or password', 403)
+        throw new HttpExceptError('Wrong is email or password!', 403)
       }
     } else {
-      throw new HttpExceptError('Wrong is email or password', 403)
+      throw new HttpExceptError('Wrong is email or password!', 403)
     }
   }
 
   async login(user: any) {
     const payload = user;
     let token = this.jwtService.sign(payload);
-    const { password, _id, confirmationCode, ...other } = user._doc
+    const { password, confirmationCode, ...other } = user._doc
     return {
       access_token: token,
       user: other

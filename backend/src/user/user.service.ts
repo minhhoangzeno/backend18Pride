@@ -6,6 +6,7 @@ import { Model } from 'mongoose';
 import { characters, messageEmailInvaild, messageEmailUnquie, messageNotFound, messagePasswordInvaild, statusCodeErrorUser } from 'src/constant';
 import { HttpExceptError } from 'src/helpers/error';
 import { sendEmailForgotPassword, sendEmailRegister } from 'src/helpers/sendEmail';
+import { uploadFileCloudfare } from 'src/helpers/uploadFileCloudfare';
 import { ChangePasswordDto } from './dto/changePassword.dto';
 import { CreateUserDto } from './dto/createUser.dto';
 import { ResetPasswordDto } from './dto/resetPassword.dto';
@@ -16,6 +17,18 @@ import { User, UserDocument } from './schemas/user.schemas';
 @Injectable()
 export class UserService {
   constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) { }
+
+  // find User by SuperAdmin
+  async findAll(activePage: number, limit: number) {
+    return this.userModel.find({ $or: [{ "role": 'Admin' }, { 'role': 'User' }] }).skip(limit * (activePage - 1)).limit(limit).exec().then(result => {
+      return this.userModel.find({ $or: [{ "role": 'Admin' }, { 'role': 'User' }] }).countDocuments().exec().then(countDocuments => {
+        return {
+          total: countDocuments,
+          data: result
+        }
+      })
+    });
+  }
 
   //find One User
   async findOne(email: string): Promise<User | undefined> {
@@ -59,8 +72,13 @@ export class UserService {
   }
 
   // update User
-  async updateUser(id: string, updateUserDto: UpdateUserDto): Promise<any> {
-    return await this.userModel.findByIdAndUpdate(id, updateUserDto).then(result => {
+  async updateUser(id: string, updateUserDto: UpdateUserDto, file?: any): Promise<any> {
+    let user = await this.userModel.findById(id);
+    let photoURL = user.photoURL;
+    if (file) {
+      photoURL = await uploadFileCloudfare(file);
+    }
+    return await this.userModel.findByIdAndUpdate(id, { ...updateUserDto, photoURL }).then(result => {
       return result;
     }).catch(err => {
       throw new HttpExceptError(messageNotFound, HttpStatus.NOT_FOUND)
@@ -117,6 +135,20 @@ export class UserService {
       }
       user.confirmationCode = token;
       user.save();
+    }
+  }
+
+  async roleUser(id: string, role: string) {
+    const user = await this.userModel.findById(id.toString());
+    if (user) {
+      if (['User', 'Admin'].includes(role)) {
+        user.role = role;
+        return user.save();
+      } else {
+        throw new HttpExceptError(messageNotFound, HttpStatus.NOT_FOUND);
+      }
+    } else {
+      throw new HttpExceptError(messageNotFound, HttpStatus.NOT_FOUND);
     }
   }
 }

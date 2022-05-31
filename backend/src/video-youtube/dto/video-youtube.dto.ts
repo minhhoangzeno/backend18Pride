@@ -4,4 +4,6 @@ export class VideoYoutubeDto {
   tag: string;
   metaDescription: string;
   description: string;
+  time: number;
+  people: number;
 }
